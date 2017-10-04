@@ -12,8 +12,8 @@ Explain your bot here and what it does.
 
 Always up to date links to downloads are here and only here.
 
-[**Windows 64bit**](#put-your-link-here)
+[**Windows 64bit**](https://github.com/JonSnowbd/Firework/raw/master/_build/windows64/Firework.exe)
 
-[**Linux 64bit**](#put-your-link-here)
+**Linux 64bit** - Coming soon
 
-[**MacOS 64bit**](#put-your-link-here)
+**MacOS 64bit** - Coming soon
