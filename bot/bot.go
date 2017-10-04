@@ -10,8 +10,6 @@ import (
 type State struct {
 	// Running declares whether or not the bot is responding to input.
 	Running bool
-	// RateLimit is the amount of times per 10 seconds this bot can post to the Discord API
-	RateLimit float32
 	// Prefix is the string that determines how commands will be triggered.
 	Prefix string
 	// Selfbot is whether or not this bot will connect as a user or as its own bot.
@@ -77,22 +75,24 @@ func (b *State) messageHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 
 	for _, cmd := range b.commands {
 		if cmd.Match(argCommand, m.Author.ID == b.user.ID) {
-			log.Info("argCommand ran:", argCommand)
-			cmd.Run(s, m)
+			log.Info("Command ran:", argCommand)
+			err := cmd.Run(s, m)
+			if err != nil {
+				log.Error(err)
+			}
 			return
 		}
 	}
-	log.Info("Command failed:", argCommand)
+	log.Info("Command doesn't exist:", argCommand)
 }
 
 // GetDefaultState returns a state that is set up to just work.
 func GetDefaultState() State {
 	return State{
-		Selfbot:   false,
-		Running:   false,
-		RateLimit: 10.0,
-		commands:  []Command{},
-		Prefix:    "!",
+		Selfbot:  false,
+		Running:  false,
+		commands: []Command{},
+		Prefix:   "!",
 	}
 }
 

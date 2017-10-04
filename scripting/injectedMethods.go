@@ -1,8 +1,8 @@
-package commands
+package scripting
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/yuin/gopher-lua"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func lua_say(Client *discordgo.Session, Message *discordgo.MessageCreate) func(*lua.LState) int {
@@ -11,11 +11,4 @@ func lua_say(Client *discordgo.Session, Message *discordgo.MessageCreate) func(*
 		Client.ChannelMessageSend(Message.ChannelID, msg)
 		return 0
 	}
-}
-
-func MakeEngine(Client *discordgo.Session, Message *discordgo.MessageCreate) *lua.LState {
-	L := lua.NewState()
-
-	L.SetGlobal("say", L.NewFunction(lua_say(Client, Message)))
-	return L
 }

@@ -11,5 +11,5 @@ type Command interface {
 	// Determines if the provided token should trigger this
 	Match(token string, isUser bool) bool
 	// Performs the action
-	Run(Client *discordgo.Session, Message *discordgo.MessageCreate)
+	Run(Client *discordgo.Session, Message *discordgo.MessageCreate) error
 }

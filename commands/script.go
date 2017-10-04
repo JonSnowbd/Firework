@@ -2,9 +2,7 @@ package commands // Replace.
 
 import (
 	"database/sql"
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/JonSnowbd/Firework/bot"
 	"github.com/JonSnowbd/Firework/util"
@@ -41,14 +39,17 @@ func (command ScriptCommand) Init(bot bot.State) {
 
 // Match returns true if provided token matches this command's identifier.
 func (command ScriptCommand) Match(token string, isUser bool) bool {
-	return util.SimplePublicCommand("script", token, isUser)
+	return util.SimplePrivateCommand("script", token, isUser)
 }
 
 // Run performs the command's logic.
-func (command ScriptCommand) Run(Client *discordgo.Session, Message *discordgo.MessageCreate) {
+func (command ScriptCommand) Run(Client *discordgo.Session, Message *discordgo.MessageCreate) error {
+
+	log := bot.GetLogger()
 
 	defer func() {
 		if r := recover(); r != nil {
+			log.Error("Something went horribly wrong with a Script command:", r)
 			Client.ChannelMessageSend(Message.ChannelID, "Error parsing command, are you sure you didn't forget a subcommand and target?")
 		}
 	}()
@@ -62,108 +63,36 @@ func (command ScriptCommand) Run(Client *discordgo.Session, Message *discordgo.M
 
 	// When creating a tag
 	if argSubcommand == "add" || argSubcommand == "+" || argSubcommand == "create" {
-		argName := args[2]
-		argScript := strings.Join(args[3:], " ")
-		argActualContent := strings.TrimPrefix(argScript, "```lua")
-		argActualContent = strings.TrimSuffix(argActualContent, "```")
-		argActualContent = strings.Trim(argActualContent, "\n")
-
-		err := command.AddTag(argName, argActualContent, Message.Author.Username)
+		err := command.handleAdding(Client, Message, args)
 		if err != nil {
-			Client.ChannelMessageSend(Message.ChannelID, "There was an error creating that script. **See your latest log file.**")
-			fmt.Println(err)
-			return
+			return err
 		}
-
-		Client.ChannelMessageSend(Message.ChannelID, fmt.Sprint("Succesfully created ", "**"+argName+"**"))
-		return
+		log.Info(Message.Author.Username, " created command: ", args[2])
+		return nil
 	}
 
+	// When deleting a tag
 	if argSubcommand == "-" || argSubcommand == "delete" || argSubcommand == "delet" || argSubcommand == "remove" {
-		target := args[2]
-		err := command.DeleteTag(target)
+		err := command.handleRemoving(Client, Message, args)
 		if err != nil {
-			fmt.Println(err)
-			Client.ChannelMessageSend(Message.ChannelID, fmt.Sprint("Failed to delete ", "**"+target+"**"))
-			return
+			return err
 		}
-		Client.ChannelMessageSend(Message.ChannelID, fmt.Sprint("Successfully deleted ", "**"+target+"**"))
-		return
+		log.Info(Message.Author.Username, " deleted command: ", args[2])
+		return nil
 	}
 
-	if argSubcommand == "view" || argSubcommand == "raw" {
-		target := args[2]
-		s, err := command.GetRawScript(target)
+	// When asking to view the raw data of any tag
+	if argSubcommand == "view" || argSubcommand == "raw" || argSubcommand == " " {
+		err := command.handleViewing(Client, Message, args)
 		if err != nil {
-			fmt.Println(err)
-			Client.ChannelMessageSend(Message.ChannelID, fmt.Sprint("**"+target+"**", " does not exist."))
-			return
+			return err
 		}
-		Client.ChannelMessageSend(Message.ChannelID, "```lua\n"+s+"\n```")
-		return
+		return nil
 	}
 
-	machine := MakeEngine(Client, Message)
-	defer machine.Close()
-	code, err := command.GetRawScript(argSubcommand)
-	if err != nil {
-		Client.ChannelMessageSend(Message.ChannelID, fmt.Sprint("**"+argSubcommand+"**", " does not exist."))
-	}
-	err = machine.DoString(code)
-	if err != nil {
-		Client.ChannelMessageSend(Message.ChannelID, fmt.Sprint("Error!\n```", err, "```"))
-	}
-}
-
-// AddTag takes a name and the contents of a script and stores it in a database.
-func (command ScriptCommand) AddTag(name string, script string, author string) error {
-	transaction, err := command.Database.Begin()
+	err := command.handleExecution(Client, Message, args)
 	if err != nil {
 		return err
 	}
-
-	statement, err := transaction.Prepare(`
-		INSERT INTO scripts(name, content, author, date, uses) VALUES(?, ?, ?, ?, ?)
-	`)
-	if err != nil {
-		return err
-	}
-
-	defer statement.Close()
-
-	_, err = statement.Exec(name, script, author, time.Now(), 0)
-	if err != nil {
-		return err
-	}
-
-	transaction.Commit()
 	return nil
-}
-
-func (command ScriptCommand) DeleteTag(name string) error {
-	statement, err := command.Database.Prepare("DELETE FROM scripts WHERE name = ?")
-	if err != nil {
-		return err
-	}
-
-	_, err = statement.Exec(name)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (command ScriptCommand) GetRawScript(name string) (string, error) {
-	statement, err := command.Database.Prepare("SELECT content FROM scripts WHERE name = ?")
-	if err != nil {
-		return "", err
-	}
-	content := ""
-	err = statement.QueryRow(name).Scan(&content)
-	if err != nil {
-		return "", err
-	}
-
-	return content, nil
 }

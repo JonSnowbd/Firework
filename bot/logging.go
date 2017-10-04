@@ -34,3 +34,7 @@ func init() {
 	ffileBackend := logging.NewBackendFormatter(fileBackend, format)
 	logging.SetBackend(fstdBackend, ffileBackend)
 }
+
+func GetLogger() *logging.Logger {
+	return log
+}

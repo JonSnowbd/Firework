@@ -45,7 +45,7 @@ func main() {
 	<-make(chan struct{}) // Simple blocking.
 }
 
-// Required as of the latest systray updated, nothing to do in it yet though.
+// Required as of the latest systray update, nothing to do in it yet though.
 func onExit() {}
 
 // Runs the system tray icon.
