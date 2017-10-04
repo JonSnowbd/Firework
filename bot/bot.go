@@ -51,7 +51,7 @@ func (b *State) Start(token string) error {
 	b.client = dclient
 	b.user = duser
 
-	log.Info("Logged on as ", duser.Username)
+	log.Info("Logged on as", duser.Username)
 
 	b.Running = true
 
@@ -72,18 +72,17 @@ func (b *State) messageHandler(s *discordgo.Session, m *discordgo.MessageCreate)
 		return
 	}
 
-	command := strings.TrimPrefix(m.Content, b.Prefix)
-	command = strings.Split(command, " ")[0]
-
-	log.Info("Command ran: ", command)
+	argCommand := strings.TrimPrefix(m.Content, b.Prefix)
+	argCommand = strings.Split(argCommand, " ")[0]
 
 	for _, cmd := range b.commands {
-		if cmd.Match(command, m.Author.ID == b.user.ID) {
+		if cmd.Match(argCommand, m.Author.ID == b.user.ID) {
+			log.Info("argCommand ran:", argCommand)
 			cmd.Run(s, m)
 			return
 		}
 	}
-
+	log.Info("Command failed:", argCommand)
 }
 
 // GetDefaultState returns a state that is set up to just work.
@@ -99,6 +98,6 @@ func GetDefaultState() State {
 
 // AddCommand adds a command to the current bot.
 func (b *State) AddCommand(command Command) {
-	command.Init()
+	command.Init(*b)
 	b.commands = append(b.commands, command)
 }

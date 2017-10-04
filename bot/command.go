@@ -7,7 +7,7 @@ import (
 // Command is an interface representing everything the bot needs to know about running a command.
 type Command interface {
 	// Initializes the command.
-	Init()
+	Init(bot State)
 	// Determines if the provided token should trigger this
 	Match(token string, isUser bool) bool
 	// Performs the action
